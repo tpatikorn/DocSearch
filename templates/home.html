@@ -16,13 +16,23 @@
         title_only: $("#title_only").is(":checked"),
         do_tokenizer: $("#do_tokenizer").is(":checked")
       }
-      alert("hi");
+      $("#doc_list tbody tr").remove();
       $.ajax({
         url: "search?" + $.param(query_params),
         context: document.body
       }).done(function (result) {
         const obj = JSON.parse(result);
         console.log(obj);
+        let i = 1;
+        for (let key in obj.filename) {
+          console.log(i, key);
+          $("#doc_list > tbody:last-child").append(`<tr>
+<td>${i}</td>
+<td>${obj["filename"][key]}</td>
+<td>${obj["page"][key]}</td>
+<td>${key}</td></tr>`);
+
+        }
       });
     });
   });
@@ -60,12 +70,12 @@
     </div>
     <button type="button" class="btn btn-primary" id="search_submit">Search</button>
   </div>
-  <table class="table">
+  <table class="table" id="doc_list">
     <thead>
     <tr>
       <th scope="col">#</th>
       <th scope="col">Doc Name</th>
-      <th scope="col">Page</th>
+      <th scope="col">Page #</th>
       <th scope="col">Link</th>
     </tr>
     </thead>
