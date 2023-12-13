@@ -38,8 +38,9 @@ def search():
     return _search(query, text, title_only, use_tokenizer).to_json()
 
 
+@app.route("/home")
 def home():
-    return render_template("home2.html")
+    return render_template("home.html")
 
 
 if __name__ == "__main__":
