@@ -1,0 +1,6 @@
+PyMuPDF~=1.23.7
+pytesseract~=0.3.10
+Flask~=3.0.0
+pandas~=2.1.4
+pythainlp~=4.0.2
+Pillow~=10.1.0
