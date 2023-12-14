@@ -27,9 +27,13 @@ def pdf_to_text(root_dir="pdf",
                 pytesseract_exe=r"C:\Program Files\Tesseract-OCR\tesseract.exe",
                 output_filename="text/summary",
                 ocr_engine="tesseract",
+                language_option="tha+eng",
                 img_dir="img"):
     pytesseract.pytesseract.tesseract_cmd = pytesseract_exe
-    reader = easyocr.Reader(['th', 'en'])
+    if language_option == "tha+eng":
+        reader = easyocr.Reader(['th', 'en'])
+    else:
+        reader = easyocr.Reader(['th'])
     files = traverse_folder(root_dir)
     files = files[0: 3]
     data = []
@@ -39,16 +43,16 @@ def pdf_to_text(root_dir="pdf",
             os.makedirs(os.path.join(img_dir, rel_path))
         with fitz.open(path.join("pdf", rel_path, filename)) as doc:  # open a document
             for i, page in enumerate(doc):
-                pix = page.get_pixmap()  # render page to an image
                 image_filepath = path.join("img", rel_path, f"{filename}_{i}.png")
                 if os.path.exists(image_filepath):
                     print("skipped", filename, i)
                 else:
+                    pix = page.get_pixmap()  # render page to an image
                     pix.save(image_filepath)
                     print(filename, i)
                 img_obj = Image.open(image_filepath)
                 if ocr_engine == "tesseract":
-                    s = pytesseract.image_to_string(img_obj, lang="tha+eng")
+                    s = pytesseract.image_to_string(img_obj, lang=language_option)
                 else:
                     s = " ".join(reader.readtext(np.array(img_obj), detail=0, paragraph=True))
                 data.append([filename, rel_path, i, s])
