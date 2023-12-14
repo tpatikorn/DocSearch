@@ -1,15 +1,11 @@
+import os
 from typing import List
 from pythainlp import tokenize
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, render_template, url_for, send_from_directory
 import pandas as pd
 
 text_location = "text/summary.csv"
 app = Flask(__name__)
-
-
-@app.route("/")
-def hello_world():
-    return "<p>Hello, World!</p>"
 
 
 def _search(query: str, text: pd.DataFrame, title_only: bool, use_tokenizer: bool) -> pd.DataFrame:
@@ -21,26 +17,36 @@ def _search(query: str, text: pd.DataFrame, title_only: bool, use_tokenizer: boo
                         query in text["text"]]
     else:
         terms: List[str] = tokenize.word_tokenize(query)
-        terms.append(query)
         if title_only:
-            return text[text["filename"].str.contains("|".join(terms))]
+            return text[text["filename"].apply(lambda s: all(term in str(s) for term in terms))]
         else:
-            return text[text["filename"].str.contains("|".join(terms)) |
-                        text["text"].str.contains("|".join(terms))]
+            for index, row in text.iterrows():
+                if type(row['text']) != str:
+                    print(index, type(row['text']))
+            return text[(text["filename"].apply(lambda s: all(term in str(s) for term in terms))) |
+                        (text["text"].apply(lambda s: all(term in str(s) for term in terms)))]
 
 
 @app.route("/search")
 def search():
     query: str = request.args.get('query')
-    text = pd.read_csv(text_location)
+    text = pd.read_csv(text_location, dtype={"filename": "string", "text": "string"})
     title_only: bool = (request.args.get('title_only') or "false").lower() == "true"
     use_tokenizer: bool = (request.args.get('use_tokenizer') or "true").lower() == "true"
     return _search(query, text, title_only, use_tokenizer).to_json()
 
 
-@app.route("/home")
+@app.route("/")
 def home():
     return render_template("home.html")
+
+
+@app.route("/fetch")
+def fetch_content():
+    content_type: str = request.args.get('content_type')
+    filename: str = request.args.get('filename')
+    relative_path: str = request.args.get('relative_path')
+    return send_from_directory(os.path.join(content_type, relative_path), filename)
 
 
 if __name__ == "__main__":
