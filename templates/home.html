@@ -70,6 +70,14 @@ data-img_url="${img_url}"><img class="preview" src="${img_url}" alt="${img_url}"
         const obj = JSON.parse(result);
         console.log(obj);
         let i = 1;
+        if(Object.keys(obj.filename).length === 0) {
+          $("#doc_list > tbody:last-child").append(`<tr>
+<td></td>
+<td>ไม่พบเอกสาร</td>
+<td></td>
+<td></td>
+<td></td></tr>`);
+        }
         for (let key in obj.filename) {
           console.log(i, key);
           $("#doc_list > tbody:last-child").append(`<tr>

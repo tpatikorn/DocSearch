@@ -33,6 +33,12 @@ def search():
     text = pd.read_csv(text_location, dtype={"filename": "string", "text": "string"})
     title_only: bool = (request.args.get('title_only') or "false").lower() == "true"
     use_tokenizer: bool = (request.args.get('use_tokenizer') or "true").lower() == "true"
+    aggregate : bool = (request.args.get('aggregate') or "true").lower() == "false"
+    text['text'] = text['filename'].astype(str) + ' ' + text['text']
+    if aggregate:
+        text = text.groupby(['filename', 'relative_path']).agg({'text': lambda x: ' '.join(x)}).reset_index()
+        text['page'] = 0
+
     return _search(query, text, title_only, use_tokenizer).to_json()
 
 

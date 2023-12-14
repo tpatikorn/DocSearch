@@ -4,3 +4,4 @@ Flask~=3.0.0
 pandas~=2.1.4
 pythainlp~=4.0.2
 Pillow~=10.1.0
+easyocr>100
