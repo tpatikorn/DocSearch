@@ -35,7 +35,6 @@ def pdf_to_text(root_dir="pdf",
     else:
         reader = easyocr.Reader(['th'])
     files = traverse_folder(root_dir)
-    files = files[0: 3]
     data = []
 
     for rel_path, filename in files:
@@ -58,12 +57,16 @@ def pdf_to_text(root_dir="pdf",
                 data.append([filename, rel_path, i, s])
 
     df = pd.DataFrame(data, columns=["filename", "relative_path", "page", "text"])
-    df.to_csv(f"{output_filename}_{ocr_engine}.csv")
+    df.to_csv(f"{output_filename}_{ocr_engine}_{language_option}.csv")
     print("done")
 
 
 if __name__ == "__main__":
     start = datetime.now()
-    pdf_to_text()
+    pdf_to_text(language_option="tha")
+    finish = datetime.now()
+    print(start, finish, finish - start)
+    start = datetime.now()
+    pdf_to_text(language_option="tha+eng")
     finish = datetime.now()
     print(start, finish, finish - start)
