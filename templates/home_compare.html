@@ -30,19 +30,6 @@
       $("#preview_image").attr("src", img_url);
     })
 
-
-    $('label').on("click", function (e) {
-      e.preventDefault();
-      let radio = $(this).find('input[type=radio]');
-      if (radio.is(':checked')) {
-        e.stopImmediatePropagation();
-        $(this).removeClass("active");
-        radio.prop('checked', false);
-      } else {
-        radio.prop('checked', true);
-      }
-    });
-
     function create_element(obj, key, content_type) {
       const relative_path = obj["relative_path"][key];
       const filename = obj["filename"][key];
@@ -73,18 +60,17 @@ data-img_url="${img_url}"><img class="preview" src="${img_url}" alt="${img_url}"
       const query_params = {
         query: $("#search_query").val(),
         title_only: $("#title_only").is(":checked"),
-        use_tokenizer: $("#use_tokenizer").is(":checked"),
-        ocr_engine: $('input[name="ocr_engine"]:checked').val(),
-        lang: $('input[name="lang"]:checked').val()
+        do_tokenizer: $("#do_tokenizer").is(":checked")
       }
       $("#doc_list tbody tr").remove();
       $.ajax({
-        url: "search?" + $.param(query_params),
+        url: "search_compare?" + $.param(query_params),
         context: document.body
       }).done(function (result) {
         const obj = JSON.parse(result);
+        console.log(obj);
         let i = 1;
-        if (Object.keys(obj.filename).length === 0) {
+        if(Object.keys(obj.filename).length === 0) {
           $("#doc_list > tbody:last-child").append(`<tr>
 <td></td>
 <td>ไม่พบเอกสาร</td>
@@ -93,10 +79,11 @@ data-img_url="${img_url}"><img class="preview" src="${img_url}" alt="${img_url}"
 <td></td></tr>`);
         }
         for (let key in obj.filename) {
+          console.log(i, key);
           $("#doc_list > tbody:last-child").append(`<tr>
 <td>${i}</td>
 <td>${obj["filename"][key]}</td>
-<td>${obj["page"][key] + 1}</td>
+<td>${obj["page"][key]+1}</td>
 <td>${create_element(obj, key, "img")}</td>
 <td>${create_element(obj, key, "pdf")}</td></tr>`);
           i++;
@@ -136,7 +123,7 @@ data-img_url="${img_url}"><img class="preview" src="${img_url}" alt="${img_url}"
 </div>
 <div class="container">
   <div class="row align-items-center">
-    <div class="col-6">
+    <div class="col-7">
       <div class="input-group">
         <div class="input-group-prepend">
           <span class="input-group-text" id="search_query_label">Search Keywords</span>
@@ -153,32 +140,14 @@ data-img_url="${img_url}"><img class="preview" src="${img_url}" alt="${img_url}"
           Search Title Only
         </label>
       </div>
+    </div>
+    <div class="col-2">
+
       <div class="form-check form-switch">
-        <input class="form-check-input" type="checkbox" value="" id="use_tokenizer" checked>
-        <label class="form-check-label" for="use_tokenizer">
+        <input class="form-check-input" type="checkbox" value="" id="do_tokenizer" checked>
+        <label class="form-check-label" for="do_tokenizer">
           Use Tokenizer
         </label>
-      </div>
-    </div>
-
-    <div class="col-1">
-      <div class="form-check">
-        <input class="form-check-input" type="radio" name="ocr_engine" id="tesseract" autocomplete="off" value="tesseract" checked>
-        <label class="form-check-label" for="tesseract" style="width:100%">Tesseract</label>
-      </div>
-      <div class="form-check">
-        <input class="form-check-input" type="radio" name="ocr_engine" id="easyocr" autocomplete="off" value="easyocr">
-        <label class="form-check-label" for="easyocr" style="width:100%">EasyOCR</label>
-      </div>
-    </div>
-    <div class="col-1">
-      <div class="form-check">
-        <input class="form-check-input" type="radio" name="lang" id="tha_eng" autocomplete="off" value="tha+eng" checked>
-        <label class="form-check-label" for="tha_eng" style="width:100%">TH+EN</label>
-      </div>
-      <div class="form-check">
-        <input class="form-check-input" type="radio" name="lang" id="tha" value="tha" autocomplete="off">
-        <label class="form-check-label" for="tha" style="width:100%">TH</label>
       </div>
     </div>
     <div class="col-1">
