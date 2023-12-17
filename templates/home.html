@@ -84,6 +84,10 @@ data-img_url="${img_url}"><img class="preview" src="${img_url}" alt="${img_url}"
       }).done(function (result) {
         const obj = JSON.parse(result);
         let i = 1;
+        const unique_files = new Set(Object.values(obj['filename']));
+        $("#num_files").html("" + unique_files.size);
+        const unique_pages = new Set(Object.values(obj['Unnamed: 0']).map((k) => obj["filename"][k] + obj["page"][k]));
+        $("#num_pages").html("" + unique_pages.size);
         if (Object.keys(obj.filename).length === 0) {
           $("#doc_list > tbody:last-child").append(`<tr>
 <td></td>
@@ -103,6 +107,8 @@ data-img_url="${img_url}"><img class="preview" src="${img_url}" alt="${img_url}"
         }
       });
     });
+    setTimeout(() => {  $("#search_submit").trigger("click"); }, 1000);
+
   });
 </script>
 <ul class="nav">
@@ -143,7 +149,7 @@ data-img_url="${img_url}"><img class="preview" src="${img_url}" alt="${img_url}"
         </div>
         <input type="text" class="form-control" placeholder="keywords"
                aria-label="search keywords" aria-describedby="search_query_label" id="search_query"
-               value="ศาสตราจารย์ ผู้ช่วย">
+               value="ศาสตราจารย์ ผู้ช่วย ขั้นต่ำ 2560">
       </div>
     </div>
     <div class="col-2">
@@ -163,7 +169,8 @@ data-img_url="${img_url}"><img class="preview" src="${img_url}" alt="${img_url}"
 
     <div class="col-1">
       <div class="form-check">
-        <input class="form-check-input" type="radio" name="ocr_engine" id="tesseract" autocomplete="off" value="tesseract" checked>
+        <input class="form-check-input" type="radio" name="ocr_engine" id="tesseract" autocomplete="off"
+               value="tesseract" checked>
         <label class="form-check-label" for="tesseract" style="width:100%">Tesseract</label>
       </div>
       <div class="form-check">
@@ -173,7 +180,8 @@ data-img_url="${img_url}"><img class="preview" src="${img_url}" alt="${img_url}"
     </div>
     <div class="col-1">
       <div class="form-check">
-        <input class="form-check-input" type="radio" name="lang" id="tha_eng" autocomplete="off" value="tha+eng" checked>
+        <input class="form-check-input" type="radio" name="lang" id="tha_eng" autocomplete="off" value="tha+eng"
+               checked>
         <label class="form-check-label" for="tha_eng" style="width:100%">TH+EN</label>
       </div>
       <div class="form-check">
@@ -185,7 +193,14 @@ data-img_url="${img_url}"><img class="preview" src="${img_url}" alt="${img_url}"
       <button type="button" class="btn btn-primary" id="search_submit">Search</button>
     </div>
   </div>
-
+  <div class="container" style="text-align: center;padding:1em">
+    <h4>
+      Found
+      <span class="badge bg-primary" id="num_files">-</span> files
+      and
+      <span class="badge bg-primary" id="num_pages">-</span> pages
+    </h4>
+  </div>
   <table class="table" id="doc_list">
     <thead>
     <tr>
