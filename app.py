@@ -1,7 +1,7 @@
 import os
 from typing import List
 from pythainlp import tokenize
-from flask import Flask, request, render_template, url_for, send_from_directory, jsonify, Blueprint
+from flask import Flask, request, render_template, send_from_directory, jsonify, Blueprint
 import pandas as pd
 
 bp = Blueprint('docsearch', __name__, template_folder='templates')
@@ -10,6 +10,13 @@ TESSERACT = "tesseract"
 EASYOCR = "easyocr"
 THA_ENG = "tha+eng"
 THA = "tha"
+
+VERBOSE = False
+
+
+def print_verbose(*args, **kwargs):
+    if VERBOSE:
+        print(args, kwargs)
 
 
 def get_text_location(ocr_engine: str, lang: str) -> str:
@@ -29,7 +36,7 @@ def _search(query: str, text: pd.DataFrame, title_only: bool, use_tokenizer: boo
         else:
             for index, row in text.iterrows():
                 if type(row['text']) != str:
-                    print(index, type(row['text']))
+                    print_verbose(index, type(row['text']))
             return text[(text["filename"].apply(lambda s: all(term in str(s) for term in terms))) |
                         (text["text"].apply(lambda s: all(term in str(s) for term in terms)))]
 
@@ -44,7 +51,7 @@ def search():
     use_tokenizer: bool = (request.args.get('use_tokenizer') or "true").lower() == "true"
     aggregate: bool = (request.args.get('aggregate') or "true").lower() == "false"
     text['text'] = text['filename'].astype(str) + ' ' + text['text']
-    print(ocr_engine, lang, title_only, use_tokenizer, aggregate)
+    print_verbose(ocr_engine, lang, title_only, use_tokenizer, aggregate)
     if aggregate:
         text = text.groupby(['filename', 'relative_path']).agg({'text': lambda x: ' '.join(x)}).reset_index()
         text['page'] = 0
@@ -79,4 +86,5 @@ def fetch_content():
 
 app = Flask(__name__)
 app.register_blueprint(bp, url_prefix='/docsearch')
-app.run(debug=True, port=8081)
+if __name__ == "__main__":
+    app.run(port=8081)
