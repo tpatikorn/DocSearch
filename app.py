@@ -80,4 +80,3 @@ def fetch_content():
 app = Flask(__name__)
 app.register_blueprint(bp, url_prefix='/docsearch')
 app.run(debug=True, port=8081)
-print("test")
