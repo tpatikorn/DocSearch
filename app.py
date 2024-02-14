@@ -1,10 +1,10 @@
 import os
 from typing import List
 from pythainlp import tokenize
-from flask import Flask, request, render_template, url_for, send_from_directory, jsonify
+from flask import Flask, request, render_template, url_for, send_from_directory, jsonify, Blueprint
 import pandas as pd
 
-app = Flask(__name__)
+bp = Blueprint('docsearch', __name__, template_folder='templates')
 
 TESSERACT = "tesseract"
 EASYOCR = "easyocr"
@@ -34,7 +34,7 @@ def _search(query: str, text: pd.DataFrame, title_only: bool, use_tokenizer: boo
                         (text["text"].apply(lambda s: all(term in str(s) for term in terms)))]
 
 
-@app.route("/search")
+@bp.route("/search")
 def search():
     query: str = request.args.get('query')
     ocr_engine = (request.args.get('ocr_engine') or TESSERACT).lower()
@@ -52,7 +52,7 @@ def search():
     return _search(query, text, title_only, use_tokenizer).to_json()
 
 
-@app.route("/search_compare")
+@bp.route("/search_compare")
 def search_compare():
     query: str = request.args.get('query')
     results = {}
@@ -64,12 +64,12 @@ def search_compare():
     return jsonify(results)
 
 
-@app.route("/")
+@bp.route("/")
 def home():
     return render_template("home.html")
 
 
-@app.route("/fetch")
+@bp.route("/fetch")
 def fetch_content():
     content_type: str = request.args.get('content_type')
     filename: str = request.args.get('filename')
@@ -77,6 +77,7 @@ def fetch_content():
     return send_from_directory(os.path.join(content_type, relative_path), filename)
 
 
-if __name__ == "__main__":
-    app.run(debug=True)
-    print("test")
+app = Flask(__name__)
+app.register_blueprint(bp, url_prefix='/docsearch')
+app.run(debug=True, port=8081)
+print("test")

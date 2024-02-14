@@ -4,5 +4,5 @@ Flask~=3.0.0
 pandas~=2.1.4
 pythainlp~=4.0.2
 Pillow~=10.1.0
-opencv-python-headless==4.5.1.48
+opencv-python-headless~=4.9.0.80
 easyocr
