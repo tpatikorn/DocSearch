@@ -10,6 +10,7 @@ import easyocr
 import numpy as np
 from datetime import datetime
 
+
 def traverse_folder(root_folder) -> List[Tuple[str, str]]:
     file_list = []
 

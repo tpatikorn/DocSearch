@@ -3,3 +3,4 @@ img/*
 pdf/*
 text/*
 .idea
+__pycache__

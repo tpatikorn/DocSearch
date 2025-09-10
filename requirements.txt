@@ -1,8 +1,9 @@
-PyMuPDF~=1.23.7
+PyMuPDF~=1.24.1
 pytesseract~=0.3.10
 Flask~=3.0.0
-pandas~=2.1.4
-pythainlp~=4.0.2
-Pillow~=10.1.0
+pandas~=2.2.2
+pythainlp~=5.0.2
+Pillow~=10.3.0
 opencv-python-headless~=4.9.0.80
-easyocr
+easyocr~=1.7.1
+numpy~=2.0.0rc1
