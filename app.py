@@ -13,6 +13,7 @@ THA = "tha"
 
 VERBOSE = False
 
+script_dir = os.path.dirname(os.path.abspath(__file__))
 
 def print_verbose(*args, **kwargs):
     if VERBOSE:
@@ -20,7 +21,7 @@ def print_verbose(*args, **kwargs):
 
 
 def get_text_location(ocr_engine: str, lang: str) -> str:
-    return f"text/summary_{ocr_engine}_{lang}.csv"
+    return os.path.join(script_dir, "text", f"summary_{ocr_engine}_{lang}.csv")
 
 
 def _search(query: str, text: pd.DataFrame, title_only: bool, use_tokenizer: bool) -> pd.DataFrame:
@@ -87,4 +88,4 @@ def fetch_content():
 app = Flask(__name__)
 app.register_blueprint(bp, url_prefix='/docsearch')
 if __name__ == "__main__":
-    app.run(port=8081)
+    app.run(port=18080, debug=True)
