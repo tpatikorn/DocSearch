@@ -88,4 +88,4 @@ def fetch_content():
 app = Flask(__name__)
 app.register_blueprint(bp, url_prefix='/docsearch')
 if __name__ == "__main__":
-    app.run(port=18080, debug=True)
+    app.run(port=9002, debug=True)
