@@ -16,6 +16,10 @@
       border: 1px solid black
     }
 
+    .big_preview {
+      max-width: 100%;
+    }
+
     .modal-dialog {
       max-width: 640px;
     }
@@ -47,7 +51,7 @@
       const relative_path = obj["relative_path"][key];
       const filename = obj["filename"][key];
       if (content_type === "pdf") {
-        let filename_for_display = `${relative_path} /${filename}`;
+        let filename_for_display = `${relative_path}/${filename}`;
         filename_for_display = filename_for_display.replaceAll(/[\\/]/gi, " / ");
         const img_params = {
           content_type: content_type,
@@ -61,7 +65,7 @@
         const img_params = {
           content_type: content_type,
           relative_path: relative_path,
-          filename: `${filename}_${page}.png`
+          filename: `${filename}_${(page).toString().padStart(3, "0")}.png`
         };
         let img_url = "fetch?" + $.param(img_params);
         return `<a href="${img_url}" data-bs-toggle="modal" data-bs-target="#preview_modal"
@@ -128,7 +132,7 @@ data-img_url="${img_url}"><img class="preview" src="${img_url}" alt="${img_url}"
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <img id="preview_image" src="" alt=""/>
+        <img id="preview_image" class="big_preview" src="" alt=""/>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>

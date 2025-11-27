@@ -2,9 +2,9 @@ import os
 
 import dotenv
 import pandas as pd
+import pymupdf
 from PIL import Image
 from google import genai
-from google.genai.errors import APIError
 
 dotenv.load_dotenv()
 
@@ -49,13 +49,8 @@ def gemini_ocr(image_path: str) -> str:
         The extracted text as a string, or an error message if processing fails.
     """
     # 1. Prepare the image and the prompt
-    try:
-        # Open the image using Pillow (PIL)
-        _img = Image.open(image_path)
-    except FileNotFoundError:
-        return f"Error: Image file not found at {image_path}"
-    except Exception as e:
-        return f"Error opening image {image_path}: {e}"
+    # Open the image using Pillow (PIL)
+    _img = Image.open(image_path)
 
     # The prompt explicitly guides the model to perform OCR and handle
     # the specific languages and numerals (Thai and English).
@@ -68,20 +63,14 @@ def gemini_ocr(image_path: str) -> str:
     # 2. Call the Gemini API
     global gemini_call_count
     gemini_call_count += 1
-    try:
-        # We send both the text prompt and the image object (as a list) to the model.
-        response = client.models.generate_content(
-            model=GEMINI_MODEL[gemini_call_count % len(GEMINI_MODEL)],
-            contents=[prompt, _img]
-        )
+    # We send both the text prompt and the image object (as a list) to the model.
+    response = client.models.generate_content(
+        model=GEMINI_MODEL[gemini_call_count % len(GEMINI_MODEL)],
+        contents=[prompt, _img]
+    )
 
-        # 3. Return the extracted text
-        return response.text
-
-    except APIError as _e:
-        return f"Gemini API Error: {_e}"
-    except Exception as _e:
-        return f"An unexpected error occurred during API call: {_e}"
+    # 3. Return the extracted text
+    return response.text
 
 
 # --- Example Usage (Requires a dummy image file) ---
@@ -91,18 +80,31 @@ if __name__ == '__main__':
     # extracted PDF page image (e.g., 'page_1.png', 'scan_001.jpg').
     consolidated_docs = pd.read_csv(CONSOLIDATE_FILEPATH)
     consolidated_docs = consolidated_docs[consolidated_docs["error"].isna()]  # only ones without errors
+    consolidated_docs = consolidated_docs[
+        consolidated_docs["text"].str.len() > 10]  # if the old one is shit, try to do it again
     consolidated_docs['page'] = consolidated_docs['page'].astype("int")
 
-    image_folders = ["img"]
+    image_root = "img"
+    raw_folders = ["pdf"]
     image_filepaths = []
-    while image_folders:
-        image_folder = image_folders.pop()
-        for elt in os.listdir(image_folder):
-            this_filepath = os.path.join(image_folder, elt)
+    while raw_folders:
+        raw_folder = raw_folders.pop()
+        for elt in os.listdir(raw_folder):
+            this_filepath = os.path.join(raw_folder, elt)
             if os.path.isdir(this_filepath):
-                image_folders.append(this_filepath)
-            elif os.path.splitext(this_filepath)[-1].lower() in [".jpg", ".jpeg", ".png"]:
-                image_filepaths.append(this_filepath)
+                raw_folders.append(this_filepath)
+                os.makedirs(os.path.join(image_root, this_filepath), exist_ok=True)
+            elif os.path.splitext(this_filepath)[-1].lower() in [".pdf"]:
+                with pymupdf.open(this_filepath) as doc:  # open a document
+                    for i, page in enumerate(doc):
+                        dst_image_filepath = os.path.join(image_root, f"{this_filepath}_{i + 1:03}.png")
+                        if os.path.exists(dst_image_filepath):
+                            print("skipped", dst_image_filepath)
+                        else:
+                            pix = page.get_pixmap(dpi=300)  # render page to an image
+                            pix.save(dst_image_filepath)
+                            print(dst_image_filepath)
+                        image_filepaths.append(dst_image_filepath)
 
     for image_filepath in image_filepaths:
         relative_path, filename = os.path.split(image_filepath)

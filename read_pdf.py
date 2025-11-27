@@ -1,14 +1,14 @@
 import os
+from datetime import datetime
+from os import path, walk
 from typing import Tuple, List
 
-import fitz
-import pytesseract
-from PIL import Image
-from os import path, walk
-import pandas as pd
 import easyocr
 import numpy as np
-from datetime import datetime
+import pandas as pd
+import pymupdf
+import pytesseract
+from PIL import Image
 
 
 def traverse_folder(root_folder) -> List[Tuple[str, str]]:
@@ -41,15 +41,15 @@ def pdf_to_text(root_dir="pdf",
     for rel_path, filename in files:
         if not os.path.exists(os.path.join(img_dir, rel_path)):
             os.makedirs(os.path.join(img_dir, rel_path))
-        with fitz.open(path.join("pdf", rel_path, filename)) as doc:  # open a document
+        with pymupdf.open(path.join("pdf", rel_path, filename)) as doc:  # open a document
             for i, page in enumerate(doc):
-                image_filepath = path.join("img", rel_path, f"{filename}_{i}.png")
+                image_filepath = path.join("img", "pdf", rel_path, f"{filename}_{i + 1:03}.png")
                 if os.path.exists(image_filepath):
-                    print("skipped", filename, i)
+                    print("skipped", filename, i + 1)
                 else:
                     pix = page.get_pixmap()  # render page to an image
                     pix.save(image_filepath)
-                    print(filename, i)
+                    print(filename, i + 1)
                 img_obj = Image.open(image_filepath)
                 if ocr_engine == "tesseract":
                     s = pytesseract.image_to_string(img_obj, lang=language_option)
