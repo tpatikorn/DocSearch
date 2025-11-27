@@ -1,14 +1,13 @@
 import json
 import os
+import re
 import time
 
 import dotenv
-import google.generativeai as genai
+from google import genai
 import pandas as pd
 import requests
-from google.generativeai.types.answer_types import FinishReason
 from tqdm import tqdm
-import re
 
 dotenv.load_dotenv()
 
@@ -22,15 +21,15 @@ REDO_EVERYTHING = False
 
 if not os.path.exists(CONSOLIDATE_FILEPATH):
     _blank = pd.DataFrame({
-        "relative_path":[],
-        "filename":[],
-        "page":[],
-        "clean_text":[],
-        "meta_type":[],
-        "meta_subject":[],
-        "meta_entities":[],
-        "vector_context":[],
-        "error":[]
+        "relative_path": [],
+        "filename": [],
+        "page": [],
+        "clean_text": [],
+        "meta_type": [],
+        "meta_subject": [],
+        "meta_entities": [],
+        "vector_context": [],
+        "error": []
     })
     _blank.to_csv(CONSOLIDATE_FILEPATH, index=False)
 
@@ -45,7 +44,7 @@ PROVIDER = 'gemini'
 
 # GEMINI SETTINGS
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_MODEL = ["gemini-2.5-flash", "gemini-2.5-flash-preview-09-2025"] # switch model to different models
+GEMINI_MODEL = ["gemini-2.5-flash", "gemini-2.5-flash-preview-09-2025"]  # switch model to different models
 
 # OLLAMA SETTINGS
 OLLAMA_MODEL = "qwen3:8b"
@@ -69,14 +68,16 @@ if PROVIDER == 'gemini':
     )
 
 call_count = 0
+
+
 def call_llm(prompt, model_id=None):
     global call_count
+    call_count += 1
     """Unified wrapper to call either Gemini or Ollama"""
     if model_id is None:
         model_to_use = model_gemini[call_count % len(model_gemini)]
     else:
         model_to_use = model_gemini[model_id]
-    call_count += 1
     response = None
 
     if PROVIDER == 'gemini':
@@ -142,8 +143,8 @@ if not REDO_EVERYTHING and os.path.exists(CONSOLIDATE_FILEPATH):
     consolidated_docs = pd.read_csv(CONSOLIDATE_FILEPATH)
     # if ['relative_path', 'filename', 'page'] combo is in consolidated_docs, remove it from merged
     # only look at rows where it's not error
-    #if "error" in consolidated_docs.columns:
-    #    consolidated_docs = consolidated_docs[consolidated_docs["error"].isna()]
+    if "error" in consolidated_docs.columns:
+        consolidated_docs = consolidated_docs[consolidated_docs["error"].isna()]
 
     merged_df['page'] = merged_df['page'].astype("int")
     consolidated_docs['page'] = consolidated_docs['page'].astype("int")
@@ -166,11 +167,15 @@ print(merged_df.shape)
 
 # wrap additional clean_text() because OCR is dump and can generate shitty characters
 def clean_text(text):
+    text = str(text)
     if not text:
         return "Empty"
     # json.dumps escapes quotes and backslashes,
     # and ensures implies surrounding quotes which helps separate the versions.
-    return json.dumps(str(text))
+    text = re.sub(r'[\x00-\x1F\x7F-\x9F.*]', ' ', text).strip()
+    text = text.replace('"""', '\\"\\"\\"')
+    return json.dumps(text)
+
 
 def construct_prompt(row):
     """Creates the 'Judge' prompt with 4 versions of the text."""
@@ -179,7 +184,7 @@ You are an expert Thai Document Editor. I have processed a single document page 
 Your job is to combine them into ONE perfect version and extract metadata.
 
 INPUT VERSIONS:
-Version 1: {clean_text(row.get('text_v1', '').replace('/.', ' '))}
+Version 1: {clean_text(row.get('text_v1', ''))}
 Version 2: {clean_text(row.get('text_v2', ''))}
 Version 3: {clean_text(row.get('text_v3', ''))}
 Version 4: {clean_text(row.get('text_v4', ''))}
@@ -237,7 +242,8 @@ for index, this_row in tqdm(merged_df.iterrows(), total=merged_df.shape[0]):
         this_result['meta_subject'] = ai_data.get('subject', '')
         this_result['meta_entities'] = entities
         # Metadata string for embedding
-        this_result['vector_context'] = f"Type: {ai_data.get('doc_type')} | Subject: {ai_data.get('subject')} | Entities: {entities}"
+        this_result[
+            'vector_context'] = f"Type: {ai_data.get('doc_type')} | Subject: {ai_data.get('subject')} | Entities: {entities}"
 
         # Rate Limit Safety for Gemini (Free tier usually allows 15 RPM, Paid is higher)
         if PROVIDER == 'gemini':
@@ -248,12 +254,11 @@ for index, this_row in tqdm(merged_df.iterrows(), total=merged_df.shape[0]):
         # Fallback to raw text
         this_result['error'] = str(e)
         error_count += 1
-        time.sleep(6) # sleep on it. It might hit RPM
-        if error_count >= 10:
+        time.sleep(6)  # sleep on it. It might hit RPM
+        if error_count >= 100:
             print("too many error, likely caused by RPD limit reached")
             break
     else:
         error_count = 0
 
     pd.DataFrame(this_result, index=[0]).to_csv(CONSOLIDATE_FILEPATH, index=False, mode='a', header=False)
-
