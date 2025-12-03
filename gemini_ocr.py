@@ -5,6 +5,7 @@ import pandas as pd
 import pymupdf
 from PIL import Image
 from google import genai
+from google.genai.types import GenerateContentConfig
 
 dotenv.load_dotenv()
 
@@ -12,7 +13,7 @@ dotenv.load_dotenv()
 OUTPUT_FOLDER = "text_cleaned"
 CONSOLIDATE_FILEPATH = os.path.join(OUTPUT_FOLDER, "ocr_docs.csv")
 
-GEMINI_MODEL = ["gemini-2.5-flash", "gemini-2.5-flash-preview-09-2025"]  # switch model to different models
+GEMINI_MODEL = ["gemini-2.5-pro"]  # switch model to different models
 
 if not os.path.exists(CONSOLIDATE_FILEPATH):
     _blank = pd.DataFrame({
@@ -55,20 +56,30 @@ def gemini_ocr(image_path: str) -> str:
     # The prompt explicitly guides the model to perform OCR and handle
     # the specific languages and numerals (Thai and English).
     prompt = (
-        "Extract ALL text, including Thai characters, Thai numerals, and English, "
-        "from this scanned document image. Present the extracted text in its original "
-        "document structure, preserving line breaks and sections."
+        "Extract ALL text from this scanned document image. Extracted as much text in its original "
+        "document structure as possible, preserving line breaks and sections if possible while avoiding reciting copyrighted material."
     )
 
     # 2. Call the Gemini API
     global gemini_call_count
     gemini_call_count += 1
+
+    config = GenerateContentConfig(
+        temperature=1,
+        response_mime_type="text/plain",
+
+    )
+
     # We send both the text prompt and the image object (as a list) to the model.
     response = client.models.generate_content(
         model=GEMINI_MODEL[gemini_call_count % len(GEMINI_MODEL)],
-        contents=[prompt, _img]
+        contents=[prompt, _img],
+        config=config
+
     )
 
+    for c in response.candidates:
+        print("candidates:", c.finish_reason, c.content, c.safety_ratings, c.citation_metadata)
     # 3. Return the extracted text
     return response.text
 
@@ -119,7 +130,7 @@ if __name__ == '__main__':
 
         # skipping items that's already been OCR'd
         if len(done_items):
-            print(f"Already done OCR on: {image_filepath}. Skipped")
+            # print(f"Already done OCR on: {image_filepath}. Skipped")
             continue
 
         try:
