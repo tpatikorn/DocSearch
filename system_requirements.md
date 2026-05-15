@@ -88,13 +88,13 @@ The UI is based on the existing home.html prototype vibe but streamlined.
 
 4. AI Coding Agent Instructions (Rules of Engagement)
 
-    - Database Schema: Do NOT use ORMs (like SQLAlchemy ORM models) to auto-generate or migrate the schema. The database
-      relies on advanced PostgreSQL features (tsvector, generated columns). Rely on the provided schema.sql file for
-      database structure. Use parameterized raw SQL or a lightweight query builder for execution.
-    - Prototype Reference: Review the user's existing prototype (read_pdf.py and home.html) to understand the desired
-      simplicity and "vibe," but upgrade the logic to strictly follow this SRS (specifically migrating from local folder
-      traversal to Google Drive API traversal).
-    - Error Handling in OCR: OCR and file conversion can be brittle. Wrap Module B in robust try/except blocks. If one
-      page fails, log the error but do not crash the entire ingestion pipeline.
-    - Concurrency: Consider using Python ThreadPoolExecutor or multiprocessing for the image conversion and OCR steps,
+- Database Schema: Do NOT use ORMs (like SQLAlchemy ORM models) to auto-generate or migrate the schema. The database
+  relies on advanced PostgreSQL features (tsvector, generated columns). Rely on the provided schema.sql file for
+  database structure. Use parameterized raw SQL or a lightweight query builder for execution.
+- Prototype Reference: Review the user's existing prototype (read_pdf.py and home.html) to understand the desired
+  simplicity and "vibe," but upgrade the logic to strictly follow this SRS (specifically migrating from local folder
+  traversal to Google Drive API traversal).
+- Error Handling in OCR: OCR and file conversion can be brittle. Wrap Module B in robust try/except blocks. If one
+  page fails, log the error but do not crash the entire ingestion pipeline.
+- Concurrency: Consider using Python ThreadPoolExecutor or multiprocessing for the image conversion and OCR steps,
       as these will be highly CPU-bound.
