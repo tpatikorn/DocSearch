@@ -7,7 +7,9 @@ Pillow>=12.0.0
 opencv-python-headless>=4.9.0.80
 easyocr>=1.7.1
 numpy>=2.3.5
-ollama~=0.6.1
-tqdm~=4.67.1
-dotenv~=0.9.9
-google-genai~=1.52.0
+python-dotenv>=1.2.2
+tqdm>=4.67.3
+psycopg>=3.3.4
+google-auth-oauthlib>=1.4.0
+protobuf
+google-api-python-client

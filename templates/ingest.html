@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <title>Ingestion Management - DocSearch Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/DocSearchPro/">DocSearch Pro</a>
+    <div class="collapse navbar-collapse">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link" href="/DocSearchPro/">Search</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" href="/DocSearchPro/ingest">Ingestion</a>
+        </li>
+      </ul>
+    </div>
+    <div class="navbar-text text-white">
+      Logged in as: {{ session['user']['email'] }}
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <!-- In Progress Card -->
+      <div id="running_card" class="card shadow-sm mb-4 d-none">
+        <div class="card-header bg-primary text-white">
+          <h4 class="card-title mb-0">Ingestion In Progress</h4>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <strong>Current File:</strong> <span id="current_file">Initializing...</span>
+          </div>
+          <div class="text-center h4">
+            Processed <span id="processed_count" class="badge bg-success">0</span> files
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm" id="form_card">
+        <div class="card-header bg-white">
+          <h3 class="card-title mb-0">Run Document Ingestion</h3>
+        </div>
+        <div class="card-body p-4">
+          <p class="text-muted">Enter a Google Drive folder link to start processing documents. "Fast Mode" skips already processed files, while "Full Mode" forces a re-download and re-OCR of all documents.</p>
+          
+          <form id="ingest_form">
+            <div class="mb-3">
+              <label for="folder_link" class="form-label">Google Drive Folder Link</label>
+              <input type="text" id="folder_link" name="folder_link" class="form-control form-control-lg" placeholder="https://drive.google.com/drive/folders/..." required>
+            </div>
+            
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <label for="mode" class="form-label">Execution Mode</label>
+                <select id="mode" name="mode" class="form-select form-select-lg">
+                  <option value="Fast">Fast Mode (Recommended)</option>
+                  <option value="Full">Full Mode (Force Refresh)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="d-grid">
+              <button type="submit" class="btn btn-primary btn-lg" id="submit_btn">
+                Start Ingestion Engine
+              </button>
+            </div>
+          </form>
+
+          <div id="status_alert" class="alert mt-4 d-none" role="alert">
+            <h4 class="alert-heading" id="status_title"></h4>
+            <p id="status_message" class="mb-0"></p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-4 p-3 border rounded bg-white">
+        <h5>Pipeline Configuration:</h5>
+        <ul>
+          <li><strong>Streaming:</strong> Processing files immediately as they are discovered.</li>
+          <li><strong>Persistence:</strong> Downloads are stored in <code>static/raw</code> (no-removal).</li>
+          <li><strong>Storage:</strong> Previews and raw files utilize sharding for high-volume support (10,000+ files).</li>
+          <li><strong>OCR:</strong> High-speed extraction using Tesseract (EasyOCR removed for speed).</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+$(function() {
+  function updateStatus() {
+    $.getJSON('/DocSearchPro/ingest/status', function(status) {
+      if (status.is_running) {
+        $('#running_card').removeClass('d-none');
+        $('#form_card').addClass('opacity-50');
+        $('#submit_btn').prop('disabled', true).text('Process Running...');
+        
+        $('#current_file').text(status.current_file || 'Starting...');
+        $('#processed_count').text(status.processed_count);
+      } else {
+        $('#running_card').addClass('d-none');
+        $('#form_card').removeClass('opacity-50');
+        $('#submit_btn').prop('disabled', false).text('Start Ingestion Engine');
+      }
+    });
+  }
+
+  // Poll status every 3 seconds
+  setInterval(updateStatus, 3000);
+  updateStatus(); // Initial check
+
+  $('#ingest_form').on('submit', function(e) {
+    e.preventDefault();
+    
+    const $alert = $('#status_alert');
+    const $title = $('#status_title');
+    const $msg = $('#status_message');
+
+    $.ajax({
+      url: '/DocSearchPro/ingest',
+      method: 'POST',
+      data: $(this).serialize(),
+      success: function(response) {
+        $alert.removeClass('d-none alert-danger').addClass('alert-success');
+        $title.text('Accepted');
+        $msg.text('The ingestion engine has started in the background.');
+        updateStatus();
+      },
+      error: function(xhr) {
+        $alert.removeClass('d-none alert-success').addClass('alert-danger');
+        $title.text('Error');
+        $msg.text(xhr.status === 409 ? 'An ingestion process is already running.' : 'Error starting ingestion.');
+      }
+    });
+  });
+});
+</script>
+
+</body>
+</html>
