@@ -148,7 +148,6 @@ def search():
 
     tag_ids = request.args.getlist('tags', type=int)
     limit = request.args.get('limit', default=20, type=int)
-
     results = search_documents(query, tag_ids=tag_ids, limit=limit)
 
     execute_query("""

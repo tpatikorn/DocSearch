@@ -3,7 +3,7 @@ import threading
 
 from db import execute_query, error_log, debug_print
 from drive_utils import get_drive_service, list_files_in_folder, download_file
-from processor import get_or_create_folder, process_document, get_sharded_path
+from processor import get_or_create_folder, process_document_pdf, process_document_textract, get_sharded_path
 
 # Global state for ingestion tracking
 ingestion_lock = threading.Lock()
@@ -13,6 +13,8 @@ ingestion_status = {
     "processed_count": 0,
     "folder_id": None
 }
+
+MIN_DOWNLOADED_SIZE = 1024 # if it's smaller than this, it could be corrupted, redownload
 
 
 def run_ingestion_thread(folder_link, mode="Fast"):
@@ -61,12 +63,12 @@ def run_ingestion_thread(folder_link, mode="Fast"):
                         processed_drive_ids.append(drive_id)
 
                         # Check DB
-                        existing = execute_query("SELECT id FROM documents WHERE drive_id = %s", (drive_id,))
+                        existing = execute_query("SELECT id FROM documents WHERE drive_id = %s and length(aggregated_tokens) > 0", (drive_id,))
 
                         should_process = True
                         if mode == "Fast" and existing:
                             should_process = False
-                            debug_print(f"Skipping {filename} (Fast Mode)")
+                            debug_print(f"Skipping {filename} (Fast Mode)", end=". ")
 
                         if should_process:
                             debug_print(f"Processing {filename}...")
@@ -77,15 +79,23 @@ def run_ingestion_thread(folder_link, mode="Fast"):
                             os.makedirs(raw_dir, exist_ok=True)
                             local_path = os.path.join(raw_dir, filename)
 
-                            if not os.path.exists(local_path):
+                            # if the file doesn't exist, download
+                            # if it's too small, could be sign of previous download corrupted, redownload
+                            if not os.path.exists(local_path) or os.path.getsize(local_path) < MIN_DOWNLOADED_SIZE:
                                 print(f"Downloading {filename}...")
                                 download_file(service, drive_id, local_path)
 
-                            process_document(local_path, drive_id, filename, current_db_id, tags=path_tags)
+                            if os.path.splitext(filename.lower())[-1] == '.pdf':
+                                process_document_pdf(local_path, drive_id, filename, current_db_id, tags=path_tags)
+                            else:
+                                try:
+                                    process_document_textract(local_path, drive_id, filename, current_db_id, tags=path_tags)
+                                except Exception as e:
+                                    error_log("process_document_textract", f"{filename} [{drive_id}]: {str(e)}")
 
                         ingestion_status["processed_count"] += 1
             except Exception as e:
-                error_log("process_recursive", str(e))
+                error_log("process_recursive", f"{current_folder_id} -- {current_db_id}: {str(e)}")
 
         # 1 & 2. Traverse and Process in one go
         process_recursive(folder_id, root_db_id, [root_name])

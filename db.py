@@ -49,7 +49,7 @@ def debug_print(*args, **kwargs):
 def error_log(process, message):
     process = str(process)
     message = str(message)
-    debug_print(process, message)
+    debug_print(process, '\033[31m'+message) # \033[31m is for color red
     execute_query("""
                   INSERT INTO error_logs (process, message)
                   VALUES (%s, %s)""",

@@ -13,3 +13,6 @@ psycopg>=3.3.4
 google-auth-oauthlib>=1.4.0
 protobuf
 google-api-python-client
+textract>=2.0.0
+gensim>=4.4.0
+

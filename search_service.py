@@ -15,9 +15,9 @@ def get_common_tags():
     return execute_query(sql)
 
 
-def search_documents(query_text, tag_ids=None, limit=20):
+def search_documents(query_text, tag_ids=None, limit =20):
     # 1. Tokenize query
-    tokens = word_tokenize(query_text, engine="newmm")
+    tokens = word_tokenize(query_text, engine="newmm", keep_whitespace=False)
 
     # Phase 1: Document Match (AND)
     and_query = " & ".join(tokens)
@@ -30,7 +30,7 @@ def search_documents(query_text, tag_ids=None, limit=20):
         params.append(tag_ids)
         params.append(tag_ids)
 
-    params.append(limit)
+    params.append(str(limit))
 
     doc_sql = f"""
         WITH RECURSIVE folder_paths AS (
@@ -72,14 +72,17 @@ def search_documents(query_text, tag_ids=None, limit=20):
     # Combine results
     results = []
     for doc in matched_docs:
+        this_result = {
+            "filename": doc['filename'],
+            "folder_path": doc['folder_name'],
+            "drive_id": doc['drive_id'],
+            "pages":[]}
         doc_pages = [p for p in matched_pages if p['document_id'] == doc['id']]
         for p in doc_pages:
-            results.append({
-                "filename": doc['filename'],
-                "folder_path": doc['folder_name'],
-                "drive_id": doc['drive_id'],
+            this_result['pages'].append({
                 "page_number": p['page_number'],
                 "content_snippet": p['content'][:200] + "..."  # Snippet for preview
             })
+        results.append(this_result)
 
     return results

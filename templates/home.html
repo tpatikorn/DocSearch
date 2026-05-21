@@ -57,7 +57,7 @@
                 </select>
                 <button class="btn btn-primary" type="button" id="search_button">ค้นหา</button>
             </div>
-            
+
             <div id="tag_container" class="text-center mb-3">
                 <div class="text-muted small mb-2">Filter by folder tags (most common):</div>
                 <div id="tag_list" class="d-flex flex-wrap justify-content-center gap-2">
@@ -79,7 +79,6 @@
             <th>Document Name</th>
             <th>Page</th>
             <th>Preview</th>
-            <th>Drive Link</th>
         </tr>
         </thead>
         <tbody>
@@ -114,6 +113,8 @@
                     const $tag = $(`<span class="badge rounded-pill border border-primary text-primary px-3 py-2" 
                                          style="cursor:pointer" data-id="${tag.id}">${tag.name} (${tag.doc_count})</span>`);
                     $tag.on('click', function() {
+                        console.log(tag.id);
+                        console.log(selectedTags);
                         if (selectedTags.has(tag.id)) {
                             selectedTags.delete(tag.id);
                             $(this).removeClass('bg-primary text-white').addClass('text-primary');
@@ -121,6 +122,7 @@
                             selectedTags.add(tag.id);
                             $(this).addClass('bg-primary text-white').removeClass('text-primary');
                         }
+                        console.log(selectedTags);
                     });
                     $list.append($tag);
                 });
@@ -133,7 +135,7 @@
 
             const limit = $('#search_limit').val();
             let url = `/DocSearchPro/search?query=${encodeURIComponent(query)}&limit=${limit}`;
-            
+
             selectedTags.forEach(id => {
                 url += `&tags=${id}`;
             });
@@ -150,24 +152,42 @@
                 }
 
                 data.forEach((res, i) => {
-                    const previewUrl = `/DocSearchPro/preview/${res.drive_id}/${res.page_number}`;
                     const driveLink = `https://drive.google.com/file/d/${res.drive_id}/view`;
+                    const numPages = res.pages.length;
+                    let firstRow = true;
 
-                    const row = `
+                    res.pages.forEach((page) => {
+                        const previewUrl = `/DocSearchPro/preview/${res.drive_id}/${page.page_number}`;
+                        if (firstRow) {
+                            firstRow = false;
+                            const row = `
           <tr>
-            <td>${i + 1}</td>
-            <td>${res.folder_path}</td>
-            <td>${res.filename}</td>
-            <td>${res.page_number}</td>
+            <td rowspan="${numPages}">${i + 1}</td>
+            <td rowspan="${numPages}">${res.folder_path}</td>
+            <td rowspan="${numPages}">${res.filename}<br><a href="${driveLink}" target="_blank" class="btn btn-sm btn-outline-secondary">Open in Drive</a></td>
+            <td>${page.page_number}</td>
             <td>
-              <img src="${previewUrl}" class="preview-thumbnail" 
-                   onclick="showPreview('${previewUrl}')" 
+              <img src="${previewUrl}" class="preview-thumbnail"
+                   onclick="showPreview('${previewUrl}')"
                    data-bs-toggle="modal" data-bs-target="#previewModal">
             </td>
-            <td><a href="${driveLink}" target="_blank" class="btn btn-sm btn-outline-secondary">Open in Drive</a></td>
           </tr>
         `;
-                    $('#results_table tbody').append(row);
+                            $('#results_table tbody').append(row);
+                        }
+                        else {
+                            const row = `
+          <tr>
+            <td>${page.page_number}</td>
+            <td>
+              <img src="${previewUrl}" class="preview-thumbnail"
+                   onclick="showPreview('${previewUrl}')"
+                   data-bs-toggle="modal" data-bs-target="#previewModal">
+            </td>
+          </tr>`
+                            $('#results_table tbody').append(row);
+                        }
+                    });
                 });
             });
         };
